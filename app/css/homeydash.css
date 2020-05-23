@@ -51,6 +51,16 @@ a {
     transition: visibility 0s linear 0.25s, opacity 0.25s 0s, transform 0.25s;
   }
 
+#infopanel-camera {
+  background-size:contain;
+  background-repeat: no-repeat;
+  height: 69vh;
+  width: 70vw;
+  background-position-x: center;
+  background-position-y: center;
+  opacity: 1;
+}
+
   #info-panel {
     position: absolute;
     width: 80vw;
@@ -129,16 +139,16 @@ a {
       background-color: #ffffff;
       box-shadow: 0 2px 2px rgba(0,0,0,0.2);
       border-radius: 16px;
-      box-sizing: border-box;      
+      box-sizing: border-box;
       color: #000000;
       padding: 8px 16px 24px 16px;
-      
+
     }
 
     #slider-icon {
       position: absolute;
       top: 15px;
-      left: 15px;      
+      left: 15px;
       width: 45px;
       height: 45px;
       background: black;
@@ -152,7 +162,7 @@ a {
     #slider-capability {
       position: absolute;
       top: 30px;
-      left: 58px;      
+      left: 58px;
       width: 30px;
       height: 30px;
       background: black;
@@ -195,11 +205,11 @@ a {
     #slider:disabled {
         opacity: 0.2;
     }
-    
+
     #slider:hover {
       opacity: 1;
     }
-    
+
     #slider::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -212,7 +222,7 @@ a {
       background: rgb(75, 215, 98);
       cursor: pointer;
     }
-    
+
     #slider::-moz-range-thumb {
       width: 25px;
       height: 25px;
@@ -222,7 +232,7 @@ a {
     }
 
   #content {
-    display: flex; 
+    display: flex;
     flex-direction: column;
   }
     #content > #row1 { order: 1; }

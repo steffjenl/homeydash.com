@@ -76,9 +76,9 @@ window.addEventListener('load', function() {
         var $settingsIcon = document.getElementById('settings-icon');
         var $logo = document.getElementById('logo');
     $content = document.getElementById('content');
-      var $row1 = document.getElementById('row1'); 
+      var $row1 = document.getElementById('row1');
         var $flows = document.getElementById('flows');
-          var $favoriteflows = document.getElementById('favorite-flows');  
+          var $favoriteflows = document.getElementById('favorite-flows');
             var $flowsInner = document.getElementById('flows-inner');
       var $row2 = document.getElementById('row2');
         var $devices = document.getElementById('devices');
@@ -95,7 +95,7 @@ window.addEventListener('load', function() {
   } else {
     row = "1,2,3".split(",")
   }
-  
+
   $row1.style.order = row[0]
   $row2.style.order = row[1]
   $row3.style.order = row[2]
@@ -114,7 +114,7 @@ window.addEventListener('load', function() {
   $logo.addEventListener('mousedown', function() {
     logoStart();
   });
-  
+
   $logo.addEventListener('touchstart', function() {
     logoStart();
   });
@@ -225,7 +225,7 @@ window.addEventListener('load', function() {
 
   var backgroundfromurl = getQueryVariable('background');
   if ( backgroundfromurl == undefined ) { backgroundfromurl = "" }
-  
+
   var vadjust = getQueryVariable('vadjust');
   if ( vadjust == undefined ) { vadjust = 0}
 
@@ -750,7 +750,7 @@ window.addEventListener('load', function() {
         }
 
         setBrightness(brightness)
-        return renderDevices(favoriteDevices);        
+        return renderDevices(favoriteDevices);
 
       }).catch(console.error);
     }).catch(console.error);
@@ -1005,7 +1005,7 @@ window.addEventListener('load', function() {
         if ( alarm.repetition["saturday"] ) { weekend = weekend + moment.weekdaysMin(6) + ","}
         if ( alarm.repetition["sunday"] ) { weekend = weekend + moment.weekdaysMin(7) + ","}
         if ( weekend == moment.weekdaysMin(6) + "," +
-              moment.weekdaysMin(7) + "," 
+              moment.weekdaysMin(7) + ","
             ) { weekend = texts.schedules.weekend + "," }
         schedule = week + weekend
         schedule = schedule.substr(schedule,schedule.length-1)
@@ -1061,7 +1061,7 @@ window.addEventListener('load', function() {
       }).catch(console.error);
     });
   }
-  
+
   function renderFlows(flows) {
     if ( flows != "" ) {
     $flowsInner.innerHTML = '';
@@ -1183,7 +1183,7 @@ window.addEventListener('load', function() {
             if (device.name=="Bier") {renderValue($value, capability.id, capability.value, "")}
             $deviceElement.appendChild($value)
             itemNr =itemNr + 1
-          } else 
+          } else
           if ( capability.id == "locked" ) {
             var $lock = document.createElement('div');
             $lock.id = 'lock:' + device.id
@@ -1250,6 +1250,156 @@ window.addEventListener('load', function() {
         }
       }
 
+      /* start custom changes */
+      if(device.class === 'camera'){
+        $deviceElement.style.backgroundImage = 'url('+device.settings.url+')';
+        $deviceElement.style.backgroundSize = 'cover';
+        $deviceElement.style.backgroundPosition = 'center';
+        //$deviceElement.style.webkitMaskImage = 'url('+device.settings.url+')';
+
+        $deviceElement.addEventListener('click', function() {
+          if ( nameChange ) { return } // No click when shown capability just changed
+          if ( longtouch ) {return} // No click when longtouch was performed
+          $infopanel.innerHTML = '';
+          var $infopanelCamera = document.createElement('div');
+          $infopanelCamera.id = "infopanel-camera";
+          $infopanelCamera.innerHTML = '';
+          $infopanel.appendChild($infopanelCamera);
+          $infopanelCamera.style.backgroundImage = 'url('+device.settings.url+')';
+          $infopanel.style.visibility = 'visible';
+          //reload image after 10min
+          timeout = setTimeout(function() {
+            $infopanelCamera.style.backgroundImage = 'url('+device.settings.url+')';
+          }, 600000)
+        });
+      }
+
+      if(device.class === 'thermostat'){
+        //		Temperatur anzeigen
+        if ( device.capabilitiesObj && device.capabilitiesObj.measure_temperature
+            && device.capabilitiesObj && device.capabilitiesObj.target_temperature ){
+          var $tempM = document.createElement('div');
+          $tempM.classList.add('tempMeasure');
+          $tempM.id = 'value:'+device.id + ":measure_temperature";
+          //var $tempS = document.createElement('div');
+          //$tempS.classList.add('tempState');
+
+          var integer = Math.floor(device.capabilitiesObj.measure_temperature.value)
+          n = Math.abs(device.capabilitiesObj.measure_temperature.value)
+          var decimal = Math.round((n - Math.floor(n))*10)/10 + "-"
+          var decimal = decimal.substring(2,3)
+          $tempM.innerHTML  = integer + "<span id='decimal'>"+decimal+"°</span><br/>"
+
+          if (device.capabilitiesObj.measure_temperature.value <= device.capabilitiesObj.target_temperature.value) {
+            $tempM.style.color = 'red';
+            //$tempS.innerHTML = 'heating';
+            //$tempS.style.color = 'red';
+          }
+          else {
+            $tempM.style.color = 'blue';
+            //$tempS.innerHTML = 'off';
+            //$tempS.style.color = 'blue';
+          }
+
+          var $tempT = document.createElement('div');
+
+          $tempT.classList.add('tempTarget');
+          $tempT.id = 'value:'+device.id + ":target_temperature";
+
+          var integer = Math.floor(device.capabilitiesObj.target_temperature.value)
+          n = Math.abs(device.capabilitiesObj.target_temperature.value)
+          var decimal = Math.round((n - Math.floor(n))*10)/10 + "-"
+          var decimal = decimal.substring(2,3)
+          $tempT.innerHTML  = integer + "<span id='decimal'>"+decimal+"°</span><br/>"
+
+          $deviceElement.appendChild($tempM);
+          $deviceElement.appendChild($tempT);
+          //$deviceElement.appendChild($tempS);
+
+          //eventhandler for temperature change
+          //MeasureTemperature hast to be processed special because of coloring the value
+          //depending on measure/target values
+          device.makeCapabilityInstance('measure_temperature', function(value){
+            var $deviceElement = document.getElementById('device:' + device.id);
+            if( $deviceElement ) {
+              var $valueElement = document.getElementById('value:' + device.id + ":measure_temperature");
+              if (device.capabilitiesObj.measure_temperature.value <= device.capabilitiesObj.target_temperature.value) {
+                $valueElement.style.color = 'red';
+              }
+              else {
+                $valueElement.style.color = 'blue';
+              }
+            }
+          });
+          device.makeCapabilityInstance('target_temperature', function(value){
+            var $deviceElement = document.getElementById('device:' + device.id);
+            if( $deviceElement ) {
+              var $valueElement = document.getElementById('value:' + device.id + ":measure_temperature");
+              if (device.capabilitiesObj.measure_temperature.value <= device.capabilitiesObj.target_temperature.value) {
+                $valueElement.style.color = 'red';
+              }
+              else {
+                $valueElement.style.color = 'blue';
+              }
+            }
+          });
+
+        }
+
+        //var $mode = document.createElement('div');
+        //$mode.classList.add('thermostatMode');
+        if ( device.capabilitiesObj.eurotronic_mode_spirit ){
+          if ( device.capabilitiesObj.eurotronic_mode_spirit.value == "Off" ){
+            //$mode.innerHTML  = "Off";
+            //$mode.style.color = 'red';
+            $deviceElement.classList.toggle('on', false);
+
+          }
+          else{
+            //$mode.innerHTML  = "On";
+            //$mode.style.color = 'green';
+            $deviceElement.classList.toggle('on', true);
+          }
+          //$deviceElement.appendChild($mode);
+
+          //Click-Event for Icon for changing thermostate mode on touch/click
+          $deviceElement.addEventListener('click', function() {
+            if ( nameChange ) { return } // No click when shown capability just changed
+            if ( longtouch ) {return} // No click when longtouch was performed
+            if ( device.capabilitiesObj.eurotronic_mode_spirit.value == "Off" ){
+              //$deviceElement.classList.toggle('on', true);
+              homey.devices.setCapabilityValue({
+                deviceId: device.id,
+                capabilityId: 'eurotronic_mode_spirit',
+                value: 'Heat',
+              }).catch(console.error);
+            }
+            else{
+              //$deviceElement.classList.toggle('on', false);
+              homey.devices.setCapabilityValue({
+                deviceId: device.id,
+                capabilityId: 'eurotronic_mode_spirit',
+                value: 'Off',
+              }).catch(console.error);
+            }
+          });
+          //register eventhandler for mode change
+          device.makeCapabilityInstance('eurotronic_mode_spirit', function(value){
+            var $deviceElement = document.getElementById('device:' + device.id);
+            if( $deviceElement ) {
+              if ( device.capabilitiesObj.eurotronic_mode_spirit.value == "Off" ){
+                $deviceElement.classList.toggle('on', false);
+              }
+              else{
+                $deviceElement.classList.toggle('on', true);
+              }
+            }
+          });
+
+        }
+      }
+      /* end custom changes */
+
       var $nameElement = document.createElement('div');
       $nameElement.id = 'name:' + device.id
       $nameElement.classList.add('name');
@@ -1258,12 +1408,12 @@ window.addEventListener('load', function() {
     });
   }
 
-// New code start    
+// New code start
   function deviceStart($deviceElement, device, event) {
     if ( nameChange ) { return }
     longtouch = false;
     $deviceElement.classList.add('startTouch')
-         
+
     timeout = setTimeout(function() {
       if ( $deviceElement.classList.contains('startTouch') ) {
         //console.log("first timeout");
@@ -1481,7 +1631,7 @@ window.addEventListener('load', function() {
     setCookie("indoortemperature",iframesettings.newindoortemperature,12)
     setCookie("homeydashdevicebrightness",iframesettings.newhomeydashdevicebrightness,12)
     setCookie("showtime",iframesettings.newshowTime,12)
-    setCookie("zoom",iframesettings.newZoom,12)   
+    setCookie("zoom",iframesettings.newZoom,12)
     setCookie("order",iframesettings.neworder,12)
     location.assign(location.protocol + "//" + location.host + location.pathname + "?theme="+iframesettings.newtheme+"&lang="+iframesettings.newlanguage+"&token="+iframesettings.token+"&background="+encodeURIComponent(iframesettings.urlbackground)+"&logo="+encodeURIComponent(iframesettings.urllogo))
   }
@@ -1503,7 +1653,7 @@ window.addEventListener('load', function() {
       xpos = Math.round( 25 + ( parseInt((event.touches[0].clientX - 25)/(163*zoom) ) * (163*zoom) ) )
     }
     catch(err) {
-      if ( theme == "web" ) { 
+      if ( theme == "web" ) {
         xpos = event.clientX - event.offsetX
       } else {
         xpos = Math.round( 25 + ( parseInt((event.clientX - 25)/(163*zoom) ) * (163*zoom) ) )
@@ -1587,7 +1737,7 @@ window.addEventListener('load', function() {
       }).catch(console.error);
       slideDebounce = false
     },200)
-    
+
   }
 
   function valueCycle(device) {
