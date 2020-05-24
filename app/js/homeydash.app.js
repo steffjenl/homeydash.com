@@ -1250,155 +1250,21 @@ window.addEventListener('load', function() {
         }
       }
 
-      /* start custom changes */
       if(device.class === 'camera'){
-        $deviceElement.style.backgroundImage = 'url('+device.settings.url+')';
-        $deviceElement.style.backgroundSize = 'cover';
-        $deviceElement.style.backgroundPosition = 'center';
-        //$deviceElement.style.webkitMaskImage = 'url('+device.settings.url+')';
-
-        $deviceElement.addEventListener('click', function() {
-          if ( nameChange ) { return } // No click when shown capability just changed
-          if ( longtouch ) {return} // No click when longtouch was performed
-          $infopanel.innerHTML = '';
-          var $infopanelCamera = document.createElement('div');
-          $infopanelCamera.id = "infopanel-camera";
-          $infopanelCamera.innerHTML = '';
-          $infopanel.appendChild($infopanelCamera);
-          $infopanelCamera.style.backgroundImage = 'url('+device.settings.url+')';
-          $infopanel.style.visibility = 'visible';
-          //reload image after 10min
-          timeout = setTimeout(function() {
-            $infopanelCamera.style.backgroundImage = 'url('+device.settings.url+')';
-          }, 600000)
-        });
-      }
-
-      if(device.class === 'thermostat'){
-        //		Temperatur anzeigen
-        if ( device.capabilitiesObj && device.capabilitiesObj.measure_temperature
-            && device.capabilitiesObj && device.capabilitiesObj.target_temperature ){
-          var $tempM = document.createElement('div');
-          $tempM.classList.add('tempMeasure');
-          $tempM.id = 'value:'+device.id + ":measure_temperature";
-          //var $tempS = document.createElement('div');
-          //$tempS.classList.add('tempState');
-
-          var integer = Math.floor(device.capabilitiesObj.measure_temperature.value)
-          n = Math.abs(device.capabilitiesObj.measure_temperature.value)
-          var decimal = Math.round((n - Math.floor(n))*10)/10 + "-"
-          var decimal = decimal.substring(2,3)
-          $tempM.innerHTML  = integer + "<span id='decimal'>"+decimal+"°</span><br/>"
-
-          if (device.capabilitiesObj.measure_temperature.value <= device.capabilitiesObj.target_temperature.value) {
-            $tempM.style.color = 'red';
-            //$tempS.innerHTML = 'heating';
-            //$tempS.style.color = 'red';
-          }
-          else {
-            $tempM.style.color = 'blue';
-            //$tempS.innerHTML = 'off';
-            //$tempS.style.color = 'blue';
-          }
-
-          var $tempT = document.createElement('div');
-
-          $tempT.classList.add('tempTarget');
-          $tempT.id = 'value:'+device.id + ":target_temperature";
-
-          var integer = Math.floor(device.capabilitiesObj.target_temperature.value)
-          n = Math.abs(device.capabilitiesObj.target_temperature.value)
-          var decimal = Math.round((n - Math.floor(n))*10)/10 + "-"
-          var decimal = decimal.substring(2,3)
-          $tempT.innerHTML  = integer + "<span id='decimal'>"+decimal+"°</span><br/>"
-
-          $deviceElement.appendChild($tempM);
-          $deviceElement.appendChild($tempT);
-          //$deviceElement.appendChild($tempS);
-
-          //eventhandler for temperature change
-          //MeasureTemperature hast to be processed special because of coloring the value
-          //depending on measure/target values
-          device.makeCapabilityInstance('measure_temperature', function(value){
-            var $deviceElement = document.getElementById('device:' + device.id);
-            if( $deviceElement ) {
-              var $valueElement = document.getElementById('value:' + device.id + ":measure_temperature");
-              if (device.capabilitiesObj.measure_temperature.value <= device.capabilitiesObj.target_temperature.value) {
-                $valueElement.style.color = 'red';
-              }
-              else {
-                $valueElement.style.color = 'blue';
-              }
-            }
-          });
-          device.makeCapabilityInstance('target_temperature', function(value){
-            var $deviceElement = document.getElementById('device:' + device.id);
-            if( $deviceElement ) {
-              var $valueElement = document.getElementById('value:' + device.id + ":measure_temperature");
-              if (device.capabilitiesObj.measure_temperature.value <= device.capabilitiesObj.target_temperature.value) {
-                $valueElement.style.color = 'red';
-              }
-              else {
-                $valueElement.style.color = 'blue';
-              }
-            }
-          });
-
+        let snapshotUrl = null;
+        if (Array.isArray(device.images) && (device.images[0] !== undefined) && (device.images[0].imageObj !== undefined) && (device.images[0].imageObj.url !== undefined) ) {
+          homey.images.baseUrl.then( url => {
+            snapshotUrl = `${url}${device.images[0].imageObj.url}`;
+            renderCamera($deviceElement, $infopanel, snapshotUrl, nameChange, longtouch);
+          }).catch(error => { console.log(error)});
         }
-
-        //var $mode = document.createElement('div');
-        //$mode.classList.add('thermostatMode');
-        if ( device.capabilitiesObj.eurotronic_mode_spirit ){
-          if ( device.capabilitiesObj.eurotronic_mode_spirit.value == "Off" ){
-            //$mode.innerHTML  = "Off";
-            //$mode.style.color = 'red';
-            $deviceElement.classList.toggle('on', false);
-
+        else {
+          snapshotUrl = device.settings.url;
+          if (snapshotUrl !== undefined && snapshotUrl !== null) {
+            renderCamera($deviceElement, $infopanel, snapshotUrl, nameChange, longtouch);
           }
-          else{
-            //$mode.innerHTML  = "On";
-            //$mode.style.color = 'green';
-            $deviceElement.classList.toggle('on', true);
-          }
-          //$deviceElement.appendChild($mode);
-
-          //Click-Event for Icon for changing thermostate mode on touch/click
-          $deviceElement.addEventListener('click', function() {
-            if ( nameChange ) { return } // No click when shown capability just changed
-            if ( longtouch ) {return} // No click when longtouch was performed
-            if ( device.capabilitiesObj.eurotronic_mode_spirit.value == "Off" ){
-              //$deviceElement.classList.toggle('on', true);
-              homey.devices.setCapabilityValue({
-                deviceId: device.id,
-                capabilityId: 'eurotronic_mode_spirit',
-                value: 'Heat',
-              }).catch(console.error);
-            }
-            else{
-              //$deviceElement.classList.toggle('on', false);
-              homey.devices.setCapabilityValue({
-                deviceId: device.id,
-                capabilityId: 'eurotronic_mode_spirit',
-                value: 'Off',
-              }).catch(console.error);
-            }
-          });
-          //register eventhandler for mode change
-          device.makeCapabilityInstance('eurotronic_mode_spirit', function(value){
-            var $deviceElement = document.getElementById('device:' + device.id);
-            if( $deviceElement ) {
-              if ( device.capabilitiesObj.eurotronic_mode_spirit.value == "Off" ){
-                $deviceElement.classList.toggle('on', false);
-              }
-              else{
-                $deviceElement.classList.toggle('on', true);
-              }
-            }
-          });
-
         }
       }
-      /* end custom changes */
 
       var $nameElement = document.createElement('div');
       $nameElement.id = 'name:' + device.id
@@ -1839,3 +1705,30 @@ window.addEventListener('load', function() {
       dn = "n";
     }
   }});
+
+function renderCamera($deviceElement, $infopanel, snapshotUrl, nameChange, longtouch) {
+  $deviceElement.style.backgroundImage = 'url(' + snapshotUrl + ')';
+  $deviceElement.style.backgroundSize = 'cover';
+  $deviceElement.style.backgroundPosition = 'center';
+  //$deviceElement.style.webkitMaskImage = 'url('+device.settings.url+')';
+
+  $deviceElement.addEventListener('click', function () {
+    if (nameChange) {
+      return
+    } // No click when shown capability just changed
+    if (longtouch) {
+      return
+    } // No click when longtouch was performed
+    $infopanel.innerHTML = '';
+    var $infopanelCamera = document.createElement('div');
+    $infopanelCamera.id = "infopanel-camera";
+    $infopanelCamera.innerHTML = '';
+    $infopanel.appendChild($infopanelCamera);
+    $infopanelCamera.style.backgroundImage = 'url(' + snapshotUrl + ')';
+    $infopanel.style.visibility = 'visible';
+    //reload image after 10min
+    timeout = setTimeout(function () {
+      $infopanelCamera.style.backgroundImage = 'url(' + snapshotUrl + ')';
+    }, 600000)
+  });
+}
